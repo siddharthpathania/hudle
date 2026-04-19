@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../announcements/presentation/announcements_feed_screen.dart';
 import '../../tasks/presentation/task_board_screen.dart';
 
 class GroupDetailScreen extends StatelessWidget {
@@ -30,7 +31,7 @@ class GroupDetailScreen extends StatelessWidget {
         body: TabBarView(
           children: [
             TaskBoardScreen(groupId: groupId),
-            const Center(child: Text('Announcements — coming in Phase 3')),
+            AnnouncementsFeedScreen(groupId: groupId),
           ],
         ),
       ),
