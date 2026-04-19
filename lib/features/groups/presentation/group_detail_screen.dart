@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../tasks/presentation/task_board_screen.dart';
+
 class GroupDetailScreen extends StatelessWidget {
   const GroupDetailScreen({required this.groupId, super.key});
   final String groupId;
@@ -20,15 +22,15 @@ class GroupDetailScreen extends StatelessWidget {
           ],
           bottom: const TabBar(
             tabs: [
-              Tab(text: '✓ Tasks'),
-              Tab(text: '📣 Announcements'),
+              Tab(text: 'Tasks'),
+              Tab(text: 'Announcements'),
             ],
           ),
         ),
-        body: const TabBarView(
+        body: TabBarView(
           children: [
-            Center(child: Text('Tasks — coming in Phase 2')),
-            Center(child: Text('Announcements — coming in Phase 3')),
+            TaskBoardScreen(groupId: groupId),
+            const Center(child: Text('Announcements — coming in Phase 3')),
           ],
         ),
       ),

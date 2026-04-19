@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/ui_constants.dart';
+import '../../../core/widgets/shimmer_loader.dart';
+import '../../tasks/domain/task_model.dart';
+import '../../tasks/domain/tasks_provider.dart';
+import '../../tasks/presentation/widgets/task_card.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  TaskDateFilter _filter = TaskDateFilter.all;
 
   String _greeting() {
     final h = DateTime.now().hour;
@@ -18,69 +30,147 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final date = DateFormat.yMMMMEEEEd().format(DateTime.now());
+    final all = ref.watch(dashboardTasksProvider(TaskDateFilter.all));
+    final filtered = ref.watch(dashboardTasksProvider(_filter));
 
     return Scaffold(
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-          children: [
-            Text(
-              _greeting(),
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 4),
-            Text(date,
-                style: GoogleFonts.dmSans(color: AppColors.textSecondary)),
-            const SizedBox(height: 24),
-            const Row(
-              children: [
-                Expanded(
-                    child: _StatCard(
-                        label: 'Today', value: '0', color: AppColors.emberOrange)),
-                SizedBox(width: 12),
-                Expanded(
-                    child: _StatCard(
-                        label: 'Overdue',
-                        value: '0',
-                        color: AppColors.hudleRose)),
-                SizedBox(width: 12),
-                Expanded(
-                    child: _StatCard(
-                        label: 'Done this week',
-                        value: '0',
-                        color: AppColors.hudleTeal)),
-              ],
-            ),
-            const SizedBox(height: 32),
-            Text('Your tasks',
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(dashboardTasksProvider);
+          },
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+            children: [
+              Text(
+                _greeting(),
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(date,
+                  style: GoogleFonts.dmSans(color: AppColors.textSecondary)),
+              const SizedBox(height: 24),
+              all.when(
+                loading: () => const Row(
                   children: [
-                    const Icon(Icons.check_circle_outline_rounded,
-                        size: 48, color: AppColors.hudleTeal),
-                    const SizedBox(height: 12),
-                    Text(
-                      'All clear! No tasks pending 🎉',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Tasks from your groups will appear here',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.dmSans(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
+                    Expanded(
+                        child: ShimmerBox(height: 88, radius: UI.radiusLg)),
+                    SizedBox(width: 12),
+                    Expanded(
+                        child: ShimmerBox(height: 88, radius: UI.radiusLg)),
+                    SizedBox(width: 12),
+                    Expanded(
+                        child: ShimmerBox(height: 88, radius: UI.radiusLg)),
                   ],
                 ),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (tasks) {
+                  final now = DateTime.now();
+                  final todayStart = DateTime(now.year, now.month, now.day);
+                  final todayEnd = todayStart.add(const Duration(days: 1));
+                  final weekStart =
+                      todayStart.subtract(const Duration(days: 7));
+
+                  final today = tasks
+                      .where((t) =>
+                          t.dueAt != null &&
+                          !t.dueAt!.isBefore(todayStart) &&
+                          t.dueAt!.isBefore(todayEnd) &&
+                          !t.isDone)
+                      .length;
+                  final overdue = tasks.where((t) => t.isOverdue).length;
+                  final doneThisWeek = tasks
+                      .where((t) =>
+                          t.isDone &&
+                          t.createdAt != null &&
+                          t.createdAt!.isAfter(weekStart))
+                      .length;
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Today',
+                          value: '$today',
+                          color: AppColors.emberOrange,
+                          selected: _filter == TaskDateFilter.today,
+                          onTap: () =>
+                              setState(() => _filter = TaskDateFilter.today),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Overdue',
+                          value: '$overdue',
+                          color: AppColors.hudleRose,
+                          selected: _filter == TaskDateFilter.overdue,
+                          onTap: () =>
+                              setState(() => _filter = TaskDateFilter.overdue),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Done this week',
+                          value: '$doneThisWeek',
+                          color: AppColors.hudleTeal,
+                          selected: _filter == TaskDateFilter.all,
+                          onTap: () =>
+                              setState(() => _filter = TaskDateFilter.all),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-            ),
-          ],
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  Text('Your tasks',
+                      style: Theme.of(context).textTheme.titleLarge),
+                  const Spacer(),
+                  if (_filter != TaskDateFilter.all)
+                    TextButton(
+                      onPressed: () =>
+                          setState(() => _filter = TaskDateFilter.all),
+                      child: const Text('Clear'),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              filtered.when(
+                loading: () => Column(
+                  children: List.generate(
+                    3,
+                    (_) => const Padding(
+                      padding: EdgeInsets.only(bottom: UI.space8),
+                      child: ShimmerBox(height: 90, radius: UI.radiusLg),
+                    ),
+                  ),
+                ),
+                error: (e, _) => Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text('Failed to load: $e',
+                        style: const TextStyle(color: AppColors.hudleRose)),
+                  ),
+                ),
+                data: (list) {
+                  if (list.isEmpty) return const _EmptyDashboard();
+                  return Column(
+                    children: [
+                      for (final t in list)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: UI.space8),
+                          child: TaskCard(task: t, showGroup: true),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -92,41 +182,88 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.selected = false,
+    this.onTap,
   });
 
   final String label;
   final String value;
   final Color color;
+  final bool selected;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(UI.radiusLg),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: selected ? 0.22 : 0.12),
+            borderRadius: BorderRadius.circular(UI.radiusLg),
+            border: Border.all(
+              color: color.withValues(alpha: selected ? 0.8 : 0.3),
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: color,
+    );
+  }
+}
+
+class _EmptyDashboard extends StatelessWidget {
+  const _EmptyDashboard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const Icon(Icons.check_circle_outline_rounded,
+                size: 48, color: AppColors.hudleTeal),
+            const SizedBox(height: 12),
+            Text(
+              'All clear! No tasks pending',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.dmSans(
-              fontSize: 12,
-              color: AppColors.textSecondary,
+            const SizedBox(height: 4),
+            Text(
+              'Tasks from your groups will appear here',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
