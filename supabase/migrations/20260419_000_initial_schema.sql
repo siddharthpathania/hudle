@@ -159,7 +159,7 @@ CREATE INDEX IF NOT EXISTS idx_task_assignees_user ON public.task_assignees(user
 
 -- ─── ANNOUNCEMENTS & POLLS ───────────────────────────────────────
 DO $$ BEGIN
-  CREATE TYPE public.announcement_status AS ENUM ('draft', 'pending', 'published', 'rejected');
+  CREATE TYPE public.announcement_status AS ENUM ('draft', 'pending', 'approved', 'rejected', 'published');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE TABLE IF NOT EXISTS public.announcements (
