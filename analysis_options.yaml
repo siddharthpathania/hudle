@@ -1,0 +1,15 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+
+linter:
+  rules:
+    prefer_single_quotes: true
+    avoid_print: true
+    sort_child_properties_last: true
+    use_super_parameters: true
+    # NOTE: require_trailing_commas intentionally disabled — dart format
+    # handles wrapping; requiring them adds noise on short one-liners.
