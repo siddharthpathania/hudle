@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/ui_constants.dart';
+import '../../../core/theme/theme_controller.dart';
 import '../../../core/widgets/shimmer_loader.dart';
+import '../../auth/data/auth_repository.dart';
 import '../../tasks/domain/task_model.dart';
 import '../../tasks/domain/tasks_provider.dart';
 import '../../tasks/presentation/widgets/task_card.dart';
@@ -27,6 +29,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return 'Good evening';
   }
 
+  void _openSettings(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => const _SettingsSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final date = DateFormat.yMMMMEEEEd().format(DateTime.now());
@@ -42,13 +52,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
-              Text(
-                _greeting(),
-                style: Theme.of(context).textTheme.headlineMedium,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _greeting(),
+                          style:
+                              Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(date,
+                            style: GoogleFonts.dmSans(
+                                color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.tune_rounded),
+                    onPressed: () => _openSettings(context),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(date,
-                  style: GoogleFonts.dmSans(color: AppColors.textSecondary)),
               const SizedBox(height: 24),
               all.when(
                 loading: () => const Row(
@@ -230,6 +258,64 @@ class _StatCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSheet extends ConsumerWidget {
+  const _SettingsSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(themeControllerProvider);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+              child: Text('Theme',
+                  style: Theme.of(context).textTheme.titleMedium),
+            ),
+            SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  label: Text('Light'),
+                  icon: Icon(Icons.light_mode_rounded),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  label: Text('System'),
+                  icon: Icon(Icons.brightness_auto_rounded),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  label: Text('Dark'),
+                  icon: Icon(Icons.dark_mode_rounded),
+                ),
+              ],
+              selected: {mode},
+              onSelectionChanged: (s) =>
+                  ref.read(themeControllerProvider.notifier).set(s.first),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.logout_rounded,
+                  color: AppColors.hudleRose),
+              title: const Text('Sign out'),
+              onTap: () async {
+                final nav = Navigator.of(context);
+                await ref.read(authRepositoryProvider).signOut();
+                if (nav.canPop()) nav.pop();
+              },
+            ),
+          ],
         ),
       ),
     );
