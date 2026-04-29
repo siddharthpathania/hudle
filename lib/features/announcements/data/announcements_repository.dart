@@ -132,26 +132,30 @@ class AnnouncementsRepository {
   }
 
   Future<void> deleteAnnouncement(String id) async {
-    final rows = await SupabaseService.client
+    await SupabaseService.client.from('announcements').delete().eq('id', id);
+    final stillThere = await SupabaseService.client
         .from('announcements')
-        .delete()
+        .select('id')
         .eq('id', id)
-        .select('id') as List;
-    if (rows.isEmpty) {
+        .maybeSingle();
+    if (stillThere != null) {
       throw Exception(
-          "Couldn't delete: you may not have permission, or it's already gone.");
+          'Delete blocked by RLS. Apply supabase migration '
+          '20260430_008_announcement_and_poll_delete_policies.sql.');
     }
   }
 
   Future<void> deletePoll(String pollId) async {
-    final rows = await SupabaseService.client
+    await SupabaseService.client.from('polls').delete().eq('id', pollId);
+    final stillThere = await SupabaseService.client
         .from('polls')
-        .delete()
+        .select('id')
         .eq('id', pollId)
-        .select('id') as List;
-    if (rows.isEmpty) {
+        .maybeSingle();
+    if (stillThere != null) {
       throw Exception(
-          "Couldn't delete poll: you may not have permission, or it's already gone.");
+          'Delete blocked by RLS. Apply supabase migration '
+          '20260430_008_announcement_and_poll_delete_policies.sql.');
     }
   }
 
