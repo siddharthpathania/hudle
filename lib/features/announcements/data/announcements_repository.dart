@@ -132,11 +132,27 @@ class AnnouncementsRepository {
   }
 
   Future<void> deleteAnnouncement(String id) async {
-    await SupabaseService.client.from('announcements').delete().eq('id', id);
+    final rows = await SupabaseService.client
+        .from('announcements')
+        .delete()
+        .eq('id', id)
+        .select('id') as List;
+    if (rows.isEmpty) {
+      throw Exception(
+          "Couldn't delete: you may not have permission, or it's already gone.");
+    }
   }
 
   Future<void> deletePoll(String pollId) async {
-    await SupabaseService.client.from('polls').delete().eq('id', pollId);
+    final rows = await SupabaseService.client
+        .from('polls')
+        .delete()
+        .eq('id', pollId)
+        .select('id') as List;
+    if (rows.isEmpty) {
+      throw Exception(
+          "Couldn't delete poll: you may not have permission, or it's already gone.");
+    }
   }
 
   Future<void> toggleReaction(String announcementId, String emoji) async {

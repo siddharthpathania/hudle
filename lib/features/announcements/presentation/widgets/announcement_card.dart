@@ -151,24 +151,36 @@ class AnnouncementCard extends ConsumerWidget {
               PollWidget(
                 poll: a.poll!,
                 onVote: (optId) async {
-                  await ref
-                      .read(announcementsRepositoryProvider)
-                      .castVote(
-                        a.poll!.id,
-                        optId,
-                        allowMultiple: a.poll!.isMultiChoice,
-                      );
-                  ref.invalidate(groupAnnouncementsProvider(a.groupId));
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    await ref
+                        .read(announcementsRepositoryProvider)
+                        .castVote(
+                          a.poll!.id,
+                          optId,
+                          allowMultiple: a.poll!.isMultiChoice,
+                        );
+                    ref.invalidate(groupAnnouncementsProvider(a.groupId));
+                  } catch (e) {
+                    messenger.showSnackBar(
+                        SnackBar(content: Text('Vote failed: $e')));
+                  }
                 },
               ),
             const SizedBox(height: 12),
             ReactionsBar(
               reactions: a.reactions,
               onReact: (emoji) async {
-                await ref
-                    .read(announcementsRepositoryProvider)
-                    .toggleReaction(a.id, emoji);
-                ref.invalidate(groupAnnouncementsProvider(a.groupId));
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await ref
+                      .read(announcementsRepositoryProvider)
+                      .toggleReaction(a.id, emoji);
+                  ref.invalidate(groupAnnouncementsProvider(a.groupId));
+                } catch (e) {
+                  messenger.showSnackBar(
+                      SnackBar(content: Text('Reaction failed: $e')));
+                }
               },
             ),
           ],
@@ -230,9 +242,14 @@ class _AnnouncementMenu extends ConsumerWidget {
         title: 'Delete poll',
         body: 'The poll will be removed. The announcement stays.',
       );
-      if (ok != true) return;
-      await repo.deletePoll(announcement.poll!.id);
-      ref.invalidate(groupAnnouncementsProvider(announcement.groupId));
+      if (ok != true || !context.mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      try {
+        await repo.deletePoll(announcement.poll!.id);
+        ref.invalidate(groupAnnouncementsProvider(announcement.groupId));
+      } catch (e) {
+        messenger.showSnackBar(SnackBar(content: Text('$e')));
+      }
       return;
     }
     if (value == 'delete_post') {
@@ -241,9 +258,14 @@ class _AnnouncementMenu extends ConsumerWidget {
         title: _isPollOnly ? 'Delete poll' : 'Delete post',
         body: 'This cannot be undone.',
       );
-      if (ok != true) return;
-      await repo.deleteAnnouncement(announcement.id);
-      ref.invalidate(groupAnnouncementsProvider(announcement.groupId));
+      if (ok != true || !context.mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      try {
+        await repo.deleteAnnouncement(announcement.id);
+        ref.invalidate(groupAnnouncementsProvider(announcement.groupId));
+      } catch (e) {
+        messenger.showSnackBar(SnackBar(content: Text('$e')));
+      }
     }
   }
 
