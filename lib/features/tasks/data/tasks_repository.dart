@@ -41,32 +41,68 @@ class TasksRepository {
     final uid = SupabaseService.currentUser?.id;
     if (uid == null) return [];
 
-    final now = DateTime.now();
-    dynamic q = SupabaseService.client
-        .from('tasks')
-        .select(
-          '*, task_assignees!inner(user_id), groups(name), '
-          'task_statuses(id, label, color), '
-          'task_subtasks(id, is_completed)',
-        )
-        .eq('task_assignees.user_id', uid);
+    // Use UTC so Supabase (which stores timestamps in UTC) comparisons are exact.
+    final now = DateTime.now().toUtc();
+    final todayStart = DateTime.utc(now.year, now.month, now.day);
+    final todayEnd   = todayStart.add(const Duration(days: 1));
 
-    if (dateFilter == TaskDateFilter.today) {
-      final start = DateTime(now.year, now.month, now.day);
-      final end = start.add(const Duration(days: 1));
-      q = q
-          .gte('due_at', start.toIso8601String())
-          .lt('due_at', end.toIso8601String());
-    } else if (dateFilter == TaskDateFilter.overdue) {
-      q = q.lt('due_at', now.toIso8601String());
-    } else if (dateFilter == TaskDateFilter.upcoming) {
-      q = q.gte('due_at', now.toIso8601String());
+    // Applies the chosen date filter to any PostgREST query builder.
+    dynamic applyDateFilter(dynamic q) {
+      if (dateFilter == TaskDateFilter.today) {
+        return q
+            .gte('due_at', todayStart.toIso8601String())
+            .lt('due_at',  todayEnd.toIso8601String());
+      } else if (dateFilter == TaskDateFilter.overdue) {
+        return q.lt('due_at', now.toIso8601String());
+      } else if (dateFilter == TaskDateFilter.upcoming) {
+        return q.gte('due_at', now.toIso8601String());
+      }
+      return q;
     }
 
-    final data = await q.order('due_at', ascending: true) as List;
-    return data
-        .map((e) => Task.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
+    const selectCols =
+        '*, groups(name), '
+        'task_statuses(id, label, color), '
+        'task_subtasks(id, is_completed)';
+
+    // Query A — tasks where I am an explicit assignee (INNER JOIN keeps only
+    // rows that have a matching task_assignees entry for this user).
+    final assignedQ = applyDateFilter(
+      SupabaseService.client
+          .from('tasks')
+          .select('$selectCols, task_assignees!inner(user_id)')
+          .eq('task_assignees.user_id', uid),
+    );
+
+    // Query B — tasks I created (creator may never have been added as an
+    // assignee, especially when tasks are created without picking assignees).
+    final createdQ = applyDateFilter(
+      SupabaseService.client
+          .from('tasks')
+          .select('$selectCols, task_assignees(user_id)')
+          .eq('created_by', uid),
+    );
+
+    // Run both in parallel, then merge and deduplicate by task id.
+    final results = await Future.wait([
+      assignedQ.order('due_at', ascending: true) as Future<List<dynamic>>,
+      createdQ.order('due_at', ascending: true) as Future<List<dynamic>>,
+    ]);
+
+    final seen   = <String>{};
+    final merged = <Task>[];
+    for (final row in [...results[0], ...results[1]]) {
+      final t = Task.fromJson(Map<String, dynamic>.from(row as Map));
+      if (seen.add(t.id)) merged.add(t);
+    }
+    // Re-sort after merge since we interleaved two ordered lists.
+    merged.sort((a, b) {
+      if (a.dueAt == null && b.dueAt == null) return 0;
+      if (a.dueAt == null) return 1;
+      if (b.dueAt == null) return -1;
+      return a.dueAt!.compareTo(b.dueAt!);
+    });
+    return merged;
   }
 
   Future<Task> fetchTask(String taskId) async {

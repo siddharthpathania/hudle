@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/ui_constants.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../../core/widgets/hudle_button.dart';
 import '../../../core/widgets/priority_badge.dart';
 import '../data/tasks_repository.dart';
@@ -77,6 +78,9 @@ class _CreateEditTaskScreenState extends ConsumerState<CreateEditTaskScreen> {
               priority: _priority,
               dueAt: _due,
               visibility: _visibility,
+              // Always include the creator as an assignee so the task appears
+              // on the dashboard (which queries by assignee or creator).
+              assigneeIds: [SupabaseService.currentUser!.id],
             ),
           );
       ref.invalidate(groupTasksProvider(

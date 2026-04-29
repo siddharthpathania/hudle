@@ -63,6 +63,7 @@ class PollWidget extends StatelessWidget {
               total: total,
               showResults: showResults,
               isMine: poll.myVoteOptionId == o.id,
+              isMultiChoice: poll.isMultiChoice,
               disabled: poll.isClosed,
               onTap: () => onVote(o.id),
             ),
@@ -91,6 +92,7 @@ class _OptionTile extends StatelessWidget {
     required this.total,
     required this.showResults,
     required this.isMine,
+    required this.isMultiChoice,
     required this.disabled,
     required this.onTap,
   });
@@ -99,6 +101,7 @@ class _OptionTile extends StatelessWidget {
   final int total;
   final bool showResults;
   final bool isMine;
+  final bool isMultiChoice;
   final bool disabled;
   final VoidCallback onTap;
 
@@ -137,6 +140,16 @@ class _OptionTile extends StatelessWidget {
               ),
             Row(
               children: [
+                if (!showResults) ...[
+                  Icon(
+                    isMultiChoice
+                        ? (isMine ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded)
+                        : (isMine ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded),
+                    size: 18,
+                    color: isMine ? AppColors.emberOrange : AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: Text(
                     option.text,

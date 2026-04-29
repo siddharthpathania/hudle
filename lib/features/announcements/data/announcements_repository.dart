@@ -68,7 +68,7 @@ class AnnouncementsRepository {
         .insert({
           'group_id': input.groupId,
           'posted_by': uid,
-          'content': input.content,
+          'content': (input.content?.trim().isEmpty ?? true) ? '📊 Poll' : input.content,
           'status': autoApprove ? 'approved' : 'pending',
           if (autoApprove) 'approved_by': uid,
           if (autoApprove) 'approved_at': DateTime.now().toIso8601String(),
@@ -82,6 +82,7 @@ class AnnouncementsRepository {
           .insert({
             'announcement_id': row['id'],
             'question': input.pollQuestion,
+            'allow_multiple': input.allowMultiple,
           })
           .select()
           .single();

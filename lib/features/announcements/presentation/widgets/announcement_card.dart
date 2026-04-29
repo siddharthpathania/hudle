@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/ui_constants.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../../data/announcements_repository.dart';
 import '../../domain/announcement_model.dart';
 import '../../domain/announcements_provider.dart';
@@ -113,6 +114,45 @@ class AnnouncementCard extends ConsumerWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                  ),
+                if (a.author?.id == SupabaseService.currentUser?.id)
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textSecondary),
+                    onSelected: (value) async {
+                      if (value == 'delete') {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text(a.poll != null ? 'Delete Poll' : 'Delete Post'),
+                            content: Text(a.poll != null 
+                              ? 'Are you sure you want to delete this poll?' 
+                              : 'Are you sure you want to delete this post?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Delete', style: TextStyle(color: AppColors.hudleRose)),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          await ref.read(announcementsRepositoryProvider).deleteAnnouncement(a.id);
+                          ref.invalidate(groupAnnouncementsProvider(a.groupId));
+                        }
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text(a.poll != null ? 'Delete Poll' : 'Delete Post', 
+                                    style: const TextStyle(color: AppColors.hudleRose)),
+                      ),
+                    ],
                   ),
               ],
             ),

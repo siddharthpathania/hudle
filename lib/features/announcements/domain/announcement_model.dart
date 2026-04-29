@@ -76,12 +76,14 @@ class Poll {
     required this.question,
     required this.options,
     this.isClosed = false,
+    this.isMultiChoice = false,
     this.myVoteOptionId,
   });
   final String id;
   final String question;
   final List<PollOption> options;
   final bool isClosed;
+  final bool isMultiChoice;
   final String? myVoteOptionId;
 
   int get totalVotes => options.fold(0, (sum, o) => sum + o.votes);
@@ -143,8 +145,12 @@ class Announcement {
       ..sort((a, b) => b.count.compareTo(a.count));
 
     Poll? poll;
-    if (pollRaw is Map) {
-      final p = Map<String, dynamic>.from(pollRaw);
+    var currentPollRaw = pollRaw;
+    if (currentPollRaw is List && currentPollRaw.isNotEmpty) {
+      currentPollRaw = currentPollRaw.first;
+    }
+    if (currentPollRaw is Map) {
+      final p = Map<String, dynamic>.from(currentPollRaw);
       final optsRaw = (p['poll_options'] as List?) ?? [];
       final votesRaw = (p['poll_votes'] as List?) ?? [];
       final voteCounts = <String, int>{};
@@ -173,6 +179,7 @@ class Announcement {
         question: p['question'] as String,
         options: opts,
         isClosed: (p['is_closed'] as bool?) ?? false,
+        isMultiChoice: (p['allow_multiple'] as bool?) ?? false,
         myVoteOptionId: myOpt,
       );
     }
@@ -209,11 +216,13 @@ class CreateAnnouncementInput {
     required this.content,
     this.pollQuestion,
     this.pollOptions = const [],
+    this.allowMultiple = false,
   });
   final String groupId;
-  final String content;
+  final String? content;
   final String? pollQuestion;
   final List<String> pollOptions;
+  final bool allowMultiple;
 
   bool get hasPoll =>
       pollQuestion != null &&
