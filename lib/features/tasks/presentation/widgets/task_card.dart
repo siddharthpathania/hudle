@@ -73,7 +73,7 @@ class TaskCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.dmSans(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: AppColors.mutedText(context),
                           ),
                         ),
                       ],
@@ -126,7 +126,7 @@ class TaskCard extends StatelessWidget {
                               '$done/$total',
                               style: GoogleFonts.dmSans(
                                 fontSize: 11,
-                                color: AppColors.textSecondary,
+                                color: AppColors.mutedText(context),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -136,7 +136,8 @@ class TaskCard extends StatelessWidget {
                                 child: LinearProgressIndicator(
                                   value: total == 0 ? 0 : done / total,
                                   minHeight: 4,
-                                  backgroundColor: AppColors.inkBorder,
+                                  backgroundColor:
+                                      AppColors.border(context),
                                   color: AppColors.hudleTeal,
                                 ),
                               ),

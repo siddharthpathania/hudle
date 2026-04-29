@@ -135,36 +135,79 @@ class AnnouncementsRepository {
     await SupabaseService.client.from('announcements').delete().eq('id', id);
   }
 
+  Future<void> deletePoll(String pollId) async {
+    await SupabaseService.client.from('polls').delete().eq('id', pollId);
+  }
+
   Future<void> toggleReaction(String announcementId, String emoji) async {
     final uid = SupabaseService.currentUser!.id;
     final existing = await SupabaseService.client
         .from('announcement_reactions')
-        .select('id')
+        .select('id, emoji')
         .eq('announcement_id', announcementId)
         .eq('user_id', uid)
-        .eq('emoji', emoji)
         .maybeSingle();
 
-    if (existing != null) {
-      await SupabaseService.client
-          .from('announcement_reactions')
-          .delete()
-          .eq('id', existing['id'] as String);
-    } else {
+    if (existing == null) {
       await SupabaseService.client.from('announcement_reactions').insert({
         'announcement_id': announcementId,
         'user_id': uid,
         'emoji': emoji,
       });
+      return;
+    }
+    if (existing['emoji'] == emoji) {
+      await SupabaseService.client
+          .from('announcement_reactions')
+          .delete()
+          .eq('id', existing['id'] as String);
+    } else {
+      await SupabaseService.client
+          .from('announcement_reactions')
+          .update({'emoji': emoji})
+          .eq('id', existing['id'] as String);
     }
   }
 
-  Future<void> castVote(String pollId, String optionId) async {
+  Future<void> castVote(
+    String pollId,
+    String optionId, {
+    required bool allowMultiple,
+  }) async {
     final uid = SupabaseService.currentUser!.id;
-    await SupabaseService.client.from('poll_votes').upsert({
-      'poll_id': pollId,
-      'option_id': optionId,
-      'user_id': uid,
-    }, onConflict: 'poll_id,user_id');
+
+    if (!allowMultiple) {
+      await SupabaseService.client
+          .from('poll_votes')
+          .delete()
+          .eq('poll_id', pollId)
+          .eq('user_id', uid);
+      await SupabaseService.client.from('poll_votes').insert({
+        'poll_id': pollId,
+        'option_id': optionId,
+        'user_id': uid,
+      });
+      return;
+    }
+
+    final existing = await SupabaseService.client
+        .from('poll_votes')
+        .select('id')
+        .eq('poll_id', pollId)
+        .eq('user_id', uid)
+        .eq('option_id', optionId)
+        .maybeSingle();
+    if (existing != null) {
+      await SupabaseService.client
+          .from('poll_votes')
+          .delete()
+          .eq('id', existing['id'] as String);
+    } else {
+      await SupabaseService.client.from('poll_votes').insert({
+        'poll_id': pollId,
+        'option_id': optionId,
+        'user_id': uid,
+      });
+    }
   }
 }

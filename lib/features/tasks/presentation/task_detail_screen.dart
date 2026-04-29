@@ -152,7 +152,7 @@ class _TaskDetailBodyState extends ConsumerState<_TaskDetailBody> {
           Text(
             t.description!,
             style: GoogleFonts.dmSans(
-              color: AppColors.textSecondary,
+              color: AppColors.mutedText(context),
               height: 1.5,
             ),
           ),
@@ -173,7 +173,7 @@ class _TaskDetailBodyState extends ConsumerState<_TaskDetailBody> {
                 style: GoogleFonts.dmSans(
                   color: t.isOverdue
                       ? AppColors.hudleRose
-                      : AppColors.textSecondary,
+                      : AppColors.mutedText(context),
                   fontSize: 12,
                 ),
               ),
@@ -191,7 +191,7 @@ class _TaskDetailBodyState extends ConsumerState<_TaskDetailBody> {
                         backgroundImage: a.avatarUrl != null
                             ? NetworkImage(a.avatarUrl!)
                             : null,
-                        backgroundColor: AppColors.inkMuted,
+                        backgroundColor: AppColors.subtleSurface(context),
                       ),
                       label: Text(a.displayName ?? 'User'),
                     ))
@@ -215,13 +215,13 @@ class _TaskDetailBodyState extends ConsumerState<_TaskDetailBody> {
                       decoration:
                           s.isCompleted ? TextDecoration.lineThrough : null,
                       color: s.isCompleted
-                          ? AppColors.textSecondary
-                          : AppColors.textPrimary,
+                          ? AppColors.mutedText(context)
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   secondary: IconButton(
-                    icon: const Icon(Icons.close_rounded,
-                        size: 18, color: AppColors.textSecondary),
+                    icon: Icon(Icons.close_rounded,
+                        size: 18, color: AppColors.mutedText(context)),
                     onPressed: () => _deleteSubtask(s.id),
                   ),
                 ),
@@ -262,7 +262,7 @@ class _TaskDetailBodyState extends ConsumerState<_TaskDetailBody> {
                 subtitle: Text(
                   a.fileType,
                   style: GoogleFonts.dmSans(
-                      fontSize: 11, color: AppColors.textSecondary),
+                      fontSize: 11, color: AppColors.mutedText(context)),
                 ),
               ),
             ),

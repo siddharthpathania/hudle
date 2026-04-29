@@ -78,6 +78,7 @@ class Poll {
     this.isClosed = false,
     this.isMultiChoice = false,
     this.myVoteOptionId,
+    this.myVoteOptionIds = const <String>{},
   });
   final String id;
   final String question;
@@ -85,7 +86,9 @@ class Poll {
   final bool isClosed;
   final bool isMultiChoice;
   final String? myVoteOptionId;
+  final Set<String> myVoteOptionIds;
 
+  bool get hasVoted => myVoteOptionIds.isNotEmpty;
   int get totalVotes => options.fold(0, (sum, o) => sum + o.votes);
 }
 
@@ -154,13 +157,13 @@ class Announcement {
       final optsRaw = (p['poll_options'] as List?) ?? [];
       final votesRaw = (p['poll_votes'] as List?) ?? [];
       final voteCounts = <String, int>{};
-      String? myOpt;
+      final myVotes = <String>{};
       for (final v in votesRaw) {
         final vm = Map<String, dynamic>.from(v as Map);
         final oid = vm['option_id'] as String;
         voteCounts[oid] = (voteCounts[oid] ?? 0) + 1;
         if (currentUserId != null && vm['user_id'] == currentUserId) {
-          myOpt = oid;
+          myVotes.add(oid);
         }
       }
       final opts = optsRaw.map((o) {
@@ -180,7 +183,8 @@ class Announcement {
         options: opts,
         isClosed: (p['is_closed'] as bool?) ?? false,
         isMultiChoice: (p['allow_multiple'] as bool?) ?? false,
-        myVoteOptionId: myOpt,
+        myVoteOptionId: myVotes.isEmpty ? null : myVotes.first,
+        myVoteOptionIds: myVotes,
       );
     }
 

@@ -25,12 +25,15 @@ class AppColors {
   // Light surfaces
   static const Color paperBase = Color(0xFFFFF8F5);
   static const Color paperSurface = Color(0xFFFFFFFF);
+  static const Color paperElevated = Color(0xFFFFF1EA);
   static const Color paperBorder = Color(0xFFFFDDD0);
+  static const Color paperMuted = Color(0xFFFFE8DD);
 
   // Text
   static const Color textPrimary = Color(0xFFF5F0EC);
   static const Color textSecondary = Color(0xFFB0A898);
   static const Color textOnLight = Color(0xFF1A1210);
+  static const Color textOnLightSecondary = Color(0xFF6B5F58);
 
   // Priority
   static const Color priorityLow = Color(0xFF059669);
@@ -48,4 +51,22 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  /// Resolves the right "muted/secondary" text color for the current theme.
+  static Color mutedText(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? textSecondary
+          : textOnLightSecondary;
+
+  /// Resolves the right border color for the current theme.
+  static Color border(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? inkBorder
+          : paperBorder;
+
+  /// Resolves the right elevated/muted surface color for the current theme.
+  static Color subtleSurface(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? inkElevated
+          : paperElevated;
 }

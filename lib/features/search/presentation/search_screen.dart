@@ -51,7 +51,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             hintText: 'Search tasks, announcements, groups…',
             border: InputBorder.none,
             hintStyle:
-                GoogleFonts.dmSans(color: AppColors.textSecondary),
+                GoogleFonts.dmSans(color: AppColors.mutedText(context)),
           ),
         ),
         actions: [
@@ -157,7 +157,7 @@ class _HitTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.dmSans(
             fontSize: 11,
-            color: AppColors.textSecondary,
+            color: AppColors.mutedText(context),
           ),
         ),
         onTap: () => _navigate(context),
@@ -193,16 +193,16 @@ class _NoResults extends StatelessWidget {
   const _NoResults();
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.sentiment_dissatisfied_rounded,
-                size: 56, color: AppColors.textSecondary),
-            SizedBox(height: 12),
-            Text('No results'),
+                size: 56, color: AppColors.mutedText(context)),
+            const SizedBox(height: 12),
+            const Text('No results'),
           ],
         ),
       ),

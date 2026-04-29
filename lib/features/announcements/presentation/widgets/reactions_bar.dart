@@ -44,7 +44,7 @@ class ReactionsBar extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(UI.radiusFull),
-                border: Border.all(color: AppColors.inkBorder),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
@@ -76,12 +76,12 @@ class _Chip extends StatelessWidget {
         decoration: BoxDecoration(
           color: reaction.mine
               ? AppColors.emberOrange.withValues(alpha: 0.15)
-              : AppColors.inkMuted.withValues(alpha: 0.4),
+              : AppColors.subtleSurface(context),
           borderRadius: BorderRadius.circular(UI.radiusFull),
           border: Border.all(
             color: reaction.mine
                 ? AppColors.emberOrange
-                : AppColors.inkBorder,
+                : AppColors.border(context),
           ),
         ),
         child: Row(
@@ -96,7 +96,7 @@ class _Chip extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: reaction.mine
                     ? AppColors.emberOrange
-                    : AppColors.textSecondary,
+                    : AppColors.mutedText(context),
               ),
             ),
           ],

@@ -186,7 +186,7 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
                   ? 'Anyone can find and request to join'
                   : 'Invite-only',
               style: GoogleFonts.dmSans(
-                  color: AppColors.textSecondary, fontSize: 12),
+                  color: AppColors.mutedText(context), fontSize: 12),
             ),
             value: _isPublic,
             onChanged:
@@ -269,10 +269,10 @@ class _MemberTile extends ConsumerWidget {
   final bool canManage;
   final bool isSuperAdmin;
 
-  Color _roleColor() => switch (member.role) {
+  Color _roleColor(BuildContext context) => switch (member.role) {
         GroupRole.superAdmin => AppColors.emberOrange,
         GroupRole.admin => AppColors.amberGold,
-        GroupRole.member => AppColors.textSecondary,
+        GroupRole.member => AppColors.mutedText(context),
       };
 
   @override
@@ -280,7 +280,7 @@ class _MemberTile extends ConsumerWidget {
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: AppColors.inkMuted,
+          backgroundColor: AppColors.subtleSurface(context),
           backgroundImage: member.avatarUrl != null
               ? NetworkImage(member.avatarUrl!)
               : null,
@@ -302,7 +302,7 @@ class _MemberTile extends ConsumerWidget {
           member.role.label,
           style: GoogleFonts.dmSans(
             fontSize: 12,
-            color: _roleColor(),
+            color: _roleColor(context),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -422,7 +422,7 @@ class _InvitesTab extends ConsumerWidget {
                       fontSize: 11,
                       color: (expired || exhausted)
                           ? AppColors.hudleRose
-                          : AppColors.textSecondary,
+                          : AppColors.mutedText(context),
                     ),
                   ),
                   trailing: _canManage

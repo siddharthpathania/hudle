@@ -18,14 +18,20 @@ class ShimmerBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final base =
+        isDark ? AppColors.inkElevated : AppColors.paperElevated;
+    final highlight =
+        isDark ? AppColors.inkBorder : AppColors.paperMuted;
+
     return Shimmer.fromColors(
-      baseColor: AppColors.inkElevated,
-      highlightColor: AppColors.inkBorder,
+      baseColor: base,
+      highlightColor: highlight,
       child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: AppColors.inkElevated,
+          color: base,
           borderRadius: BorderRadius.circular(radius),
         ),
       ),

@@ -41,7 +41,7 @@ class AnnouncementCard extends ConsumerWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: AppColors.inkMuted,
+                  backgroundColor: AppColors.subtleSurface(context),
                   backgroundImage: a.author?.avatarUrl != null
                       ? NetworkImage(a.author!.avatarUrl!)
                       : null,
@@ -76,14 +76,14 @@ class AnnouncementCard extends ConsumerWidget {
                             timeStr,
                             style: GoogleFonts.dmSans(
                               fontSize: 11,
-                              color: AppColors.textSecondary,
+                              color: AppColors.mutedText(context),
                             ),
                           ),
                           if (showGroup && a.groupName != null) ...[
                             Text(' · ',
                                 style: GoogleFonts.dmSans(
                                     fontSize: 11,
-                                    color: AppColors.textSecondary)),
+                                    color: AppColors.mutedText(context))),
                             Text(
                               a.groupName!,
                               style: GoogleFonts.dmSans(
@@ -116,44 +116,7 @@ class AnnouncementCard extends ConsumerWidget {
                     ),
                   ),
                 if (a.author?.id == SupabaseService.currentUser?.id)
-                  PopupMenuButton<String>(
-                    padding: EdgeInsets.zero,
-                    icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textSecondary),
-                    onSelected: (value) async {
-                      if (value == 'delete') {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: Text(a.poll != null ? 'Delete Poll' : 'Delete Post'),
-                            content: Text(a.poll != null 
-                              ? 'Are you sure you want to delete this poll?' 
-                              : 'Are you sure you want to delete this post?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, true),
-                                child: const Text('Delete', style: TextStyle(color: AppColors.hudleRose)),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirm == true) {
-                          await ref.read(announcementsRepositoryProvider).deleteAnnouncement(a.id);
-                          ref.invalidate(groupAnnouncementsProvider(a.groupId));
-                        }
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Text(a.poll != null ? 'Delete Poll' : 'Delete Post', 
-                                    style: const TextStyle(color: AppColors.hudleRose)),
-                      ),
-                    ],
-                  ),
+                  _AnnouncementMenu(announcement: a),
               ],
             ),
             const SizedBox(height: 12),
@@ -190,7 +153,11 @@ class AnnouncementCard extends ConsumerWidget {
                 onVote: (optId) async {
                   await ref
                       .read(announcementsRepositoryProvider)
-                      .castVote(a.poll!.id, optId);
+                      .castVote(
+                        a.poll!.id,
+                        optId,
+                        allowMultiple: a.poll!.isMultiChoice,
+                      );
                   ref.invalidate(groupAnnouncementsProvider(a.groupId));
                 },
               ),
@@ -218,5 +185,91 @@ class AnnouncementCard extends ConsumerWidget {
     if (diff.inHours < 24) return '${diff.inHours}h';
     if (diff.inDays < 7) return '${diff.inDays}d';
     return DateFormat.MMMd().format(d);
+  }
+}
+
+class _AnnouncementMenu extends ConsumerWidget {
+  const _AnnouncementMenu({required this.announcement});
+  final Announcement announcement;
+
+  bool get _hasPoll => announcement.poll != null;
+  bool get _isPollOnly =>
+      _hasPoll && announcement.content.trim() == '📊 Poll';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<String>(
+      padding: EdgeInsets.zero,
+      icon: Icon(Icons.more_vert,
+          size: 20, color: AppColors.mutedText(context)),
+      onSelected: (value) => _handle(context, ref, value),
+      itemBuilder: (_) => [
+        if (_hasPoll && !_isPollOnly)
+          const PopupMenuItem(
+            value: 'delete_poll',
+            child: Text('Delete poll',
+                style: TextStyle(color: AppColors.hudleRose)),
+          ),
+        PopupMenuItem(
+          value: 'delete_post',
+          child: Text(
+            _isPollOnly ? 'Delete poll' : 'Delete post',
+            style: const TextStyle(color: AppColors.hudleRose),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handle(
+      BuildContext context, WidgetRef ref, String value) async {
+    final repo = ref.read(announcementsRepositoryProvider);
+    if (value == 'delete_poll') {
+      final ok = await _confirm(
+        context,
+        title: 'Delete poll',
+        body: 'The poll will be removed. The announcement stays.',
+      );
+      if (ok != true) return;
+      await repo.deletePoll(announcement.poll!.id);
+      ref.invalidate(groupAnnouncementsProvider(announcement.groupId));
+      return;
+    }
+    if (value == 'delete_post') {
+      final ok = await _confirm(
+        context,
+        title: _isPollOnly ? 'Delete poll' : 'Delete post',
+        body: 'This cannot be undone.',
+      );
+      if (ok != true) return;
+      await repo.deleteAnnouncement(announcement.id);
+      ref.invalidate(groupAnnouncementsProvider(announcement.groupId));
+    }
+  }
+
+  Future<bool?> _confirm(
+    BuildContext context, {
+    required String title,
+    required String body,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: AppColors.hudleRose),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
   }
 }

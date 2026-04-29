@@ -21,6 +21,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   TaskDateFilter _filter = TaskDateFilter.all;
+  bool _doneOnly = false;
 
   String _greeting() {
     final h = DateTime.now().hour;
@@ -41,7 +42,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final date = DateFormat.yMMMMEEEEd().format(DateTime.now());
     final all = ref.watch(dashboardTasksProvider(TaskDateFilter.all));
-    final filtered = ref.watch(dashboardTasksProvider(_filter));
+    final filtered = _doneOnly
+        ? all
+        : ref.watch(dashboardTasksProvider(_filter));
 
     return Scaffold(
       body: SafeArea(
@@ -67,7 +70,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const SizedBox(height: 4),
                         Text(date,
                             style: GoogleFonts.dmSans(
-                                color: AppColors.textSecondary)),
+                                color: AppColors.mutedText(context))),
                       ],
                     ),
                   ),
@@ -121,9 +124,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           label: 'Today',
                           value: '$today',
                           color: AppColors.emberOrange,
-                          selected: _filter == TaskDateFilter.today,
-                          onTap: () =>
-                              setState(() => _filter = TaskDateFilter.today),
+                          selected: !_doneOnly &&
+                              _filter == TaskDateFilter.today,
+                          onTap: () => setState(() {
+                            _filter = TaskDateFilter.today;
+                            _doneOnly = false;
+                          }),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -132,9 +138,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           label: 'Overdue',
                           value: '$overdue',
                           color: AppColors.hudleRose,
-                          selected: _filter == TaskDateFilter.overdue,
-                          onTap: () =>
-                              setState(() => _filter = TaskDateFilter.overdue),
+                          selected: !_doneOnly &&
+                              _filter == TaskDateFilter.overdue,
+                          onTap: () => setState(() {
+                            _filter = TaskDateFilter.overdue;
+                            _doneOnly = false;
+                          }),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -143,9 +152,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           label: 'Done this week',
                           value: '$doneThisWeek',
                           color: AppColors.hudleTeal,
-                          selected: _filter == TaskDateFilter.all,
-                          onTap: () =>
-                              setState(() => _filter = TaskDateFilter.all),
+                          selected: _doneOnly,
+                          onTap: () => setState(() {
+                            _doneOnly = true;
+                            _filter = TaskDateFilter.all;
+                          }),
                         ),
                       ),
                     ],
@@ -155,13 +166,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 28),
               Row(
                 children: [
-                  Text('Your tasks',
-                      style: Theme.of(context).textTheme.titleLarge),
+                  Text(
+                    _doneOnly ? 'Done this week' : 'Your tasks',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   const Spacer(),
-                  if (_filter != TaskDateFilter.all)
+                  if (_doneOnly || _filter != TaskDateFilter.all)
                     TextButton(
-                      onPressed: () =>
-                          setState(() => _filter = TaskDateFilter.all),
+                      onPressed: () => setState(() {
+                        _filter = TaskDateFilter.all;
+                        _doneOnly = false;
+                      }),
                       child: const Text('Clear'),
                     ),
                 ],
@@ -185,10 +200,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 ),
                 data: (list) {
-                  if (list.isEmpty) return const _EmptyDashboard();
+                  final visible = _doneOnly
+                      ? list.where((t) {
+                          if (!t.isDone) return false;
+                          final ref = t.createdAt;
+                          if (ref == null) return false;
+                          return ref.isAfter(
+                              DateTime.now().subtract(const Duration(days: 7)));
+                        }).toList()
+                      : list;
+                  if (visible.isEmpty) return const _EmptyDashboard();
                   return Column(
                     children: [
-                      for (final t in list)
+                      for (final t in visible)
                         Padding(
                           padding: const EdgeInsets.only(bottom: UI.space8),
                           child: TaskCard(task: t, showGroup: true),
@@ -253,7 +277,7 @@ class _StatCard extends StatelessWidget {
                 label,
                 style: GoogleFonts.dmSans(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: AppColors.mutedText(context),
                 ),
               ),
             ],
@@ -344,7 +368,7 @@ class _EmptyDashboard extends StatelessWidget {
               'Tasks from your groups will appear here',
               textAlign: TextAlign.center,
               style: GoogleFonts.dmSans(
-                color: AppColors.textSecondary,
+                color: AppColors.mutedText(context),
                 fontSize: 13,
               ),
             ),

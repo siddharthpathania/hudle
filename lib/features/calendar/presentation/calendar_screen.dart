@@ -101,7 +101,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                       formatButtonDecoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(UI.radiusSm),
-                        border: Border.all(color: AppColors.inkBorder),
+                        border: Border.all(color: AppColors.border(context)),
                       ),
                       formatButtonTextStyle: GoogleFonts.dmSans(fontSize: 12),
                     ),
@@ -127,7 +127,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       '${selected.length} task${selected.length == 1 ? '' : 's'}',
                       style: GoogleFonts.dmSans(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: AppColors.mutedText(context),
                       ),
                     ),
                   ],
@@ -185,7 +185,7 @@ class _EmptyDay extends StatelessWidget {
               'Pick another day or add a new task',
               style: GoogleFonts.dmSans(
                 fontSize: 12,
-                color: AppColors.textSecondary,
+                color: AppColors.mutedText(context),
               ),
             ),
           ],

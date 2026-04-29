@@ -92,7 +92,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
   void _showAddSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.inkSurface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(UI.radiusXl)),
       ),
@@ -105,7 +105,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.inkBorder,
+                color: AppColors.border(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -116,7 +116,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
               title: const Text('Create Group'),
               subtitle: Text('Start a new team space',
                   style: GoogleFonts.dmSans(
-                      color: AppColors.textSecondary, fontSize: 12)),
+                      color: AppColors.mutedText(context), fontSize: 12)),
               onTap: () {
                 Navigator.pop(ctx);
                 _showCreateDialog(context);
@@ -128,7 +128,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
               title: const Text('Join via Invite Link'),
               subtitle: Text('Paste a code shared with you',
                   style: GoogleFonts.dmSans(
-                      color: AppColors.textSecondary, fontSize: 12)),
+                      color: AppColors.mutedText(context), fontSize: 12)),
               onTap: () {
                 Navigator.pop(ctx);
                 _showJoinDialog(context);
@@ -279,7 +279,7 @@ class _GroupCard extends StatelessWidget {
           '${group.createdAt != null ? ' · ${timeago.format(group.createdAt!)}' : ''}',
           style: GoogleFonts.dmSans(
             fontSize: 12,
-            color: AppColors.textSecondary,
+            color: AppColors.mutedText(context),
           ),
         ),
         trailing: const Icon(Icons.chevron_right_rounded),
@@ -312,7 +312,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               'Create one or join via invite to get started',
               textAlign: TextAlign.center,
-              style: GoogleFonts.dmSans(color: AppColors.textSecondary),
+              style: GoogleFonts.dmSans(color: AppColors.mutedText(context)),
             ),
             const SizedBox(height: 24),
             HudleButton(
@@ -349,7 +349,7 @@ class _ErrorState extends StatelessWidget {
             Text(error,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.dmSans(
-                    fontSize: 12, color: AppColors.textSecondary)),
+                    fontSize: 12, color: AppColors.mutedText(context))),
             const SizedBox(height: 16),
             FilledButton(onPressed: onRetry, child: const Text('Retry')),
           ],

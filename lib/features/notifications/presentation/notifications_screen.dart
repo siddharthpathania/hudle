@@ -107,14 +107,14 @@ class _NotificationTile extends ConsumerWidget {
         _ => Icons.notifications_rounded,
       };
 
-  Color _colorFor(String type) => switch (type) {
+  Color _colorFor(BuildContext context, String type) => switch (type) {
         'task_assigned' => AppColors.emberOrange,
         'due_reminder' => AppColors.hudleRose,
         'announcement' => AppColors.amberGold,
         'announcement_approved' => AppColors.hudleTeal,
         'announcement_rejected' => AppColors.hudleRose,
         'group_invite' => AppColors.hudleTeal,
-        _ => AppColors.textSecondary,
+        _ => AppColors.mutedText(context),
       };
 
   void _navigate(BuildContext context) {
@@ -148,10 +148,11 @@ class _NotificationTile extends ConsumerWidget {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: _colorFor(n.type).withValues(alpha: 0.18),
+            color: _colorFor(context, n.type).withValues(alpha: 0.18),
             borderRadius: BorderRadius.circular(UI.radiusSm),
           ),
-          child: Icon(_iconFor(n.type), color: _colorFor(n.type), size: 18),
+          child: Icon(_iconFor(n.type),
+              color: _colorFor(context, n.type), size: 18),
         ),
         title: Text(
           n.title,
@@ -170,7 +171,7 @@ class _NotificationTile extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.dmSans(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: AppColors.mutedText(context),
                 ),
               ),
             if (n.createdAt != null) ...[
@@ -179,7 +180,7 @@ class _NotificationTile extends ConsumerWidget {
                 DateFormat.yMMMd().add_jm().format(n.createdAt!),
                 style: GoogleFonts.dmSans(
                   fontSize: 11,
-                  color: AppColors.textSecondary,
+                  color: AppColors.mutedText(context),
                 ),
               ),
             ],

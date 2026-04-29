@@ -113,7 +113,7 @@ class _CreateAnnouncementScreenState
                   subtitle: Text(
                     'Let members vote on options',
                     style: GoogleFonts.dmSans(
-                        color: AppColors.textSecondary, fontSize: 12),
+                        color: AppColors.mutedText(context), fontSize: 12),
                   ),
                   value: _addPoll,
                   onChanged: (v) => setState(() => _addPoll = v),
@@ -138,7 +138,7 @@ class _CreateAnnouncementScreenState
                           subtitle: Text(
                             'Members can select more than one option',
                             style: GoogleFonts.dmSans(
-                                color: AppColors.textSecondary, fontSize: 12),
+                                color: AppColors.mutedText(context), fontSize: 12),
                           ),
                           value: _allowMultiple,
                           onChanged: (v) => setState(() => _allowMultiple = v),
@@ -194,7 +194,7 @@ class _CreateAnnouncementScreenState
             textAlign: TextAlign.center,
             style: GoogleFonts.dmSans(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: AppColors.mutedText(context),
             ),
           ),
         ],

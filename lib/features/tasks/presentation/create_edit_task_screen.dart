@@ -152,7 +152,7 @@ class _CreateEditTaskScreenState extends ConsumerState<CreateEditTaskScreen> {
                       ? 'Not set'
                       : DateFormat.yMMMd().add_jm().format(_due!),
                   style: GoogleFonts.dmSans(
-                      color: AppColors.textSecondary, fontSize: 12),
+                      color: AppColors.mutedText(context), fontSize: 12),
                 ),
                 trailing: _due == null
                     ? const Icon(Icons.chevron_right_rounded)
@@ -174,7 +174,7 @@ class _CreateEditTaskScreenState extends ConsumerState<CreateEditTaskScreen> {
                       ? 'All group members can see this task'
                       : 'Only assignees and admins can see this',
                   style: GoogleFonts.dmSans(
-                      color: AppColors.textSecondary, fontSize: 12),
+                      color: AppColors.mutedText(context), fontSize: 12),
                 ),
                 value: _visibility == TaskVisibility.all,
                 onChanged: (v) => setState(() => _visibility =
