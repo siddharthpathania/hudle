@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -329,6 +330,15 @@ class _SettingsSheet extends ConsumerWidget {
                   ref.read(themeControllerProvider.notifier).set(s.first),
             ),
             const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.person_rounded,
+                  color: AppColors.emberOrange),
+              title: const Text('Edit profile'),
+              onTap: () {
+                Navigator.of(context).pop();
+                context.push('/profile');
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.logout_rounded,
                   color: AppColors.hudleRose),

@@ -155,11 +155,7 @@ class AnnouncementCard extends ConsumerWidget {
                   try {
                     await ref
                         .read(announcementsRepositoryProvider)
-                        .castVote(
-                          a.poll!.id,
-                          optId,
-                          allowMultiple: a.poll!.isMultiChoice,
-                        );
+                        .castVote(a.poll!.id, optId);
                     ref.invalidate(groupAnnouncementsProvider(a.groupId));
                   } catch (e) {
                     messenger.showSnackBar(

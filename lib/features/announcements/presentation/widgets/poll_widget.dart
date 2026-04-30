@@ -18,8 +18,7 @@ class PollWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasVoted = poll.hasVoted;
-    final showResults =
-        (hasVoted && !poll.isMultiChoice) || poll.isClosed;
+    final showResults = hasVoted || poll.isClosed;
     final total = poll.totalVotes;
 
     return Container(
@@ -63,9 +62,7 @@ class PollWidget extends StatelessWidget {
               option: o,
               total: total,
               showResults: showResults,
-              showVoteCount: hasVoted || poll.isClosed,
-              isMine: poll.myVoteOptionIds.contains(o.id),
-              isMultiChoice: poll.isMultiChoice,
+              isMine: poll.myVoteOptionId == o.id,
               disabled: poll.isClosed,
               onTap: () => onVote(o.id),
             ),
@@ -93,9 +90,7 @@ class _OptionTile extends StatelessWidget {
     required this.option,
     required this.total,
     required this.showResults,
-    required this.showVoteCount,
     required this.isMine,
-    required this.isMultiChoice,
     required this.disabled,
     required this.onTap,
   });
@@ -103,9 +98,7 @@ class _OptionTile extends StatelessWidget {
   final PollOption option;
   final int total;
   final bool showResults;
-  final bool showVoteCount;
   final bool isMine;
-  final bool isMultiChoice;
   final bool disabled;
   final VoidCallback onTap;
 
@@ -129,7 +122,7 @@ class _OptionTile extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            if (showVoteCount)
+            if (showResults)
               Positioned.fill(
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
@@ -146,19 +139,15 @@ class _OptionTile extends StatelessWidget {
               ),
             Row(
               children: [
-                if (tappable || isMultiChoice) ...[
+                if (tappable) ...[
                   Icon(
-                    isMultiChoice
-                        ? (isMine
-                            ? Icons.check_box_rounded
-                            : Icons.check_box_outline_blank_rounded)
-                        : (isMine
-                            ? Icons.radio_button_checked_rounded
-                            : Icons.radio_button_off_rounded),
+                    isMine
+                        ? Icons.radio_button_checked_rounded
+                        : Icons.radio_button_off_rounded,
                     size: 18,
                     color: isMine
                         ? AppColors.emberOrange
-                        : AppColors.textSecondary,
+                        : AppColors.mutedText(context),
                   ),
                   const SizedBox(width: 8),
                 ],
@@ -172,7 +161,7 @@ class _OptionTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (showVoteCount) ...[
+                if (showResults) ...[
                   const SizedBox(width: 8),
                   Text(
                     '${(pct * 100).round()}%',

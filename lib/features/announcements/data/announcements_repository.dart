@@ -82,7 +82,6 @@ class AnnouncementsRepository {
           .insert({
             'announcement_id': row['id'],
             'question': input.pollQuestion,
-            'allow_multiple': input.allowMultiple,
           })
           .select()
           .single();
@@ -189,45 +188,17 @@ class AnnouncementsRepository {
     }
   }
 
-  Future<void> castVote(
-    String pollId,
-    String optionId, {
-    required bool allowMultiple,
-  }) async {
+  Future<void> castVote(String pollId, String optionId) async {
     final uid = SupabaseService.currentUser!.id;
-
-    if (!allowMultiple) {
-      await SupabaseService.client
-          .from('poll_votes')
-          .delete()
-          .eq('poll_id', pollId)
-          .eq('user_id', uid);
-      await SupabaseService.client.from('poll_votes').insert({
-        'poll_id': pollId,
-        'option_id': optionId,
-        'user_id': uid,
-      });
-      return;
-    }
-
-    final existing = await SupabaseService.client
+    await SupabaseService.client
         .from('poll_votes')
-        .select('id')
+        .delete()
         .eq('poll_id', pollId)
-        .eq('user_id', uid)
-        .eq('option_id', optionId)
-        .maybeSingle();
-    if (existing != null) {
-      await SupabaseService.client
-          .from('poll_votes')
-          .delete()
-          .eq('id', existing['id'] as String);
-    } else {
-      await SupabaseService.client.from('poll_votes').insert({
-        'poll_id': pollId,
-        'option_id': optionId,
-        'user_id': uid,
-      });
-    }
+        .eq('user_id', uid);
+    await SupabaseService.client.from('poll_votes').insert({
+      'poll_id': pollId,
+      'option_id': optionId,
+      'user_id': uid,
+    });
   }
 }

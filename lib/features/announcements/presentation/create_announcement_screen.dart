@@ -27,7 +27,6 @@ class _CreateAnnouncementScreenState
     TextEditingController(),
   ];
   bool _addPoll = false;
-  bool _allowMultiple = false;
   bool _saving = false;
 
   @override
@@ -72,7 +71,6 @@ class _CreateAnnouncementScreenState
               pollOptions: _addPoll
                   ? _options.map((c) => c.text).toList()
                   : const [],
-              allowMultiple: _allowMultiple,
             ),
           );
       ref.invalidate(groupAnnouncementsProvider(widget.groupId));
@@ -130,18 +128,6 @@ class _CreateAnnouncementScreenState
                             labelText: 'Question',
                             hintText: 'What should we vote on?',
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('Allow multiple answers'),
-                          subtitle: Text(
-                            'Members can select more than one option',
-                            style: GoogleFonts.dmSans(
-                                color: AppColors.mutedText(context), fontSize: 12),
-                          ),
-                          value: _allowMultiple,
-                          onChanged: (v) => setState(() => _allowMultiple = v),
                         ),
                         const SizedBox(height: 12),
                         for (var i = 0; i < _options.length; i++)

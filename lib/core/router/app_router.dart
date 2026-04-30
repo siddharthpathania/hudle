@@ -13,6 +13,7 @@ import '../../features/groups/presentation/group_detail_screen.dart';
 import '../../features/groups/presentation/group_settings_screen.dart';
 import '../../features/groups/presentation/groups_list_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/shell/onboarding_screen.dart';
@@ -52,6 +53,10 @@ final GoRouter router = GoRouter(
           builder: (_, __) => const NotificationsScreen(),
         ),
       ],
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (_, __) => const ProfileScreen(),
     ),
     GoRoute(
       path: '/groups/:groupId',

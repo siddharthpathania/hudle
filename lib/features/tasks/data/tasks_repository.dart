@@ -41,21 +41,27 @@ class TasksRepository {
     final uid = SupabaseService.currentUser?.id;
     if (uid == null) return [];
 
-    // Use UTC so Supabase (which stores timestamps in UTC) comparisons are exact.
-    final now = DateTime.now().toUtc();
-    final todayStart = DateTime.utc(now.year, now.month, now.day);
-    final todayEnd   = todayStart.add(const Duration(days: 1));
+    // Boundaries are computed in the device's LOCAL timezone (so "Today" means
+    // the user's calendar day) and then converted to UTC for the wire so
+    // Supabase's TIMESTAMPTZ comparison is exact.
+    final localNow = DateTime.now();
+    final localTodayStart =
+        DateTime(localNow.year, localNow.month, localNow.day);
+    final localTodayEnd = localTodayStart.add(const Duration(days: 1));
+    final nowUtc = localNow.toUtc();
+    final todayStartUtc = localTodayStart.toUtc();
+    final todayEndUtc = localTodayEnd.toUtc();
 
     // Applies the chosen date filter to any PostgREST query builder.
     dynamic applyDateFilter(dynamic q) {
       if (dateFilter == TaskDateFilter.today) {
         return q
-            .gte('due_at', todayStart.toIso8601String())
-            .lt('due_at',  todayEnd.toIso8601String());
+            .gte('due_at', todayStartUtc.toIso8601String())
+            .lt('due_at', todayEndUtc.toIso8601String());
       } else if (dateFilter == TaskDateFilter.overdue) {
-        return q.lt('due_at', now.toIso8601String());
+        return q.lt('due_at', nowUtc.toIso8601String());
       } else if (dateFilter == TaskDateFilter.upcoming) {
-        return q.gte('due_at', now.toIso8601String());
+        return q.gte('due_at', nowUtc.toIso8601String());
       }
       return q;
     }
