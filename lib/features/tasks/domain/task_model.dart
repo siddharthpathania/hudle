@@ -55,6 +55,31 @@ class TaskAssignee {
   }
 }
 
+/// A lightweight model for displaying group members in the assignee picker.
+class GroupMember {
+  GroupMember({
+    required this.userId,
+    required this.role,
+    this.displayName,
+    this.avatarUrl,
+  });
+
+  final String userId;
+  final String role;
+  final String? displayName;
+  final String? avatarUrl;
+
+  factory GroupMember.fromJson(Map<String, dynamic> json) {
+    final user = json['users'] as Map?;
+    return GroupMember(
+      userId: json['user_id'] as String,
+      role: json['role'] as String? ?? 'member',
+      displayName: user?['display_name'] as String?,
+      avatarUrl: user?['avatar_url'] as String?,
+    );
+  }
+}
+
 class Subtask {
   Subtask({
     required this.id,

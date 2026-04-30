@@ -206,4 +206,17 @@ class TasksRepository {
         .map((e) => TaskStatus.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
+
+  /// Returns all active (non-banned) members of a group so the UI can
+  /// display an assignee picker.
+  Future<List<GroupMember>> fetchGroupMembers(String groupId) async {
+    final data = await SupabaseService.client
+        .from('group_members')
+        .select('user_id, role, users(id, display_name, avatar_url)')
+        .eq('group_id', groupId)
+        .eq('is_banned', false) as List;
+    return data
+        .map((e) => GroupMember.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
 }

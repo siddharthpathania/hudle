@@ -35,7 +35,36 @@ class _CreateEditTaskScreenState extends ConsumerState<CreateEditTaskScreen> {
   DateTime? _due;
   bool _saving = false;
 
+  // Assignee state
+  List<GroupMember> _allMembers = [];
+  final Set<String> _assigneeIds = {};
+  bool _membersLoading = true;
+
+  String get _currentUid => SupabaseService.currentUser!.id;
   bool get _isEdit => widget.taskId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _assigneeIds.add(_currentUid);
+    _loadMembers();
+  }
+
+  Future<void> _loadMembers() async {
+    try {
+      final members = await ref
+          .read(tasksRepositoryProvider)
+          .fetchGroupMembers(widget.groupId);
+      if (mounted) {
+        setState(() {
+          _allMembers = members;
+          _membersLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _membersLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -78,9 +107,7 @@ class _CreateEditTaskScreenState extends ConsumerState<CreateEditTaskScreen> {
               priority: _priority,
               dueAt: _due,
               visibility: _visibility,
-              // Always include the creator as an assignee so the task appears
-              // on the dashboard (which queries by assignee or creator).
-              assigneeIds: [SupabaseService.currentUser!.id],
+              assigneeIds: _assigneeIds.toList(),
             ),
           );
       ref.invalidate(groupTasksProvider(
@@ -91,6 +118,24 @@ class _CreateEditTaskScreenState extends ConsumerState<CreateEditTaskScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  void _toggleAssignee(String uid) {
+    if (uid == _currentUid) return; // creator is always locked
+    setState(() {
+      if (_assigneeIds.contains(uid)) {
+        _assigneeIds.remove(uid);
+      } else {
+        _assigneeIds.add(uid);
+      }
+      
+      // Automatically make the task private to assignees if someone else is added.
+      if (_assigneeIds.length > 1) {
+        _visibility = TaskVisibility.tagged;
+      } else {
+        _visibility = TaskVisibility.all;
+      }
+    });
   }
 
   @override
@@ -181,6 +226,77 @@ class _CreateEditTaskScreenState extends ConsumerState<CreateEditTaskScreen> {
                     v ? TaskVisibility.all : TaskVisibility.tagged),
               ),
             ),
+            const SizedBox(height: 24),
+
+            // ── ASSIGNEES ────────────────────────────────────────────────
+            Row(
+              children: [
+                Text('Assignees',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(width: 8),
+                if (_visibility == TaskVisibility.tagged)
+                  Tooltip(
+                    message: 'Only assignees will be able to see this task',
+                    child: Icon(Icons.info_outline_rounded,
+                        size: 16, color: AppColors.amberGold),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_membersLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else if (_allMembers.isEmpty)
+              Text('No members found',
+                  style: GoogleFonts.dmSans(
+                      color: AppColors.mutedText(context), fontSize: 13))
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: _allMembers.map((m) {
+                  final isMe = m.userId == _currentUid;
+                  final selected = _assigneeIds.contains(m.userId);
+                  return FilterChip(
+                    avatar: CircleAvatar(
+                      radius: 12,
+                      backgroundColor: AppColors.inkMuted,
+                      backgroundImage: m.avatarUrl != null
+                          ? NetworkImage(m.avatarUrl!)
+                          : null,
+                      child: m.avatarUrl == null
+                          ? Text(
+                              (m.displayName ?? '?')
+                                  .characters
+                                  .first
+                                  .toUpperCase(),
+                              style: const TextStyle(fontSize: 10),
+                            )
+                          : null,
+                    ),
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(m.displayName ?? 'User'),
+                        if (isMe) ...[
+                          const SizedBox(width: 4),
+                          Icon(Icons.lock_rounded,
+                              size: 12,
+                              color: AppColors.mutedText(context)),
+                        ],
+                      ],
+                    ),
+                    selected: selected,
+                    onSelected: isMe ? null : (_) => _toggleAssignee(m.userId),
+                    selectedColor:
+                        AppColors.hudleTeal.withValues(alpha: 0.18),
+                    checkmarkColor: AppColors.hudleTeal,
+                  );
+                }).toList(),
+              ),
+
             const SizedBox(height: UI.space32),
             HudleButton(
               label: _isEdit ? 'Save changes' : 'Create task',

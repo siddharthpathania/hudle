@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../../core/widgets/priority_badge.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../data/tasks_repository.dart';
@@ -73,6 +74,7 @@ class TaskDetailScreen extends ConsumerWidget {
         (groupId: task.groupId, filter: TaskFilter.all)));
     if (context.mounted) Navigator.of(context).pop();
   }
+
 }
 
 class _TaskDetailBody extends ConsumerStatefulWidget {
@@ -119,6 +121,54 @@ class _TaskDetailBodyState extends ConsumerState<_TaskDetailBody> {
   Future<void> _deleteSubtask(String id) async {
     await ref.read(tasksRepositoryProvider).deleteSubtask(id);
     ref.invalidate(taskDetailProvider(widget.task.id));
+  }
+
+  /// Opens a bottom-sheet to pick/remove assignees for [task].
+  Future<void> _editAssignees(
+    BuildContext context,
+    WidgetRef ref,
+    Task task,
+  ) async {
+    final repo = ref.read(tasksRepositoryProvider);
+    List<GroupMember> members;
+    try {
+      members = await repo.fetchGroupMembers(task.groupId);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load members')),
+        );
+      }
+      return;
+    }
+    if (!context.mounted) return;
+
+    final currentUid = SupabaseService.currentUser?.id;
+    final selected = <String>{
+      for (final a in task.assignees) a.userId,
+    };
+
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => _AssigneePickerSheet(
+        members: members,
+        selected: selected,
+        creatorId: task.createdBy ?? currentUid ?? '',
+      ),
+    );
+
+    if (saved != true || !context.mounted) return;
+    await repo.setAssignees(task.id, selected.toList());
+    
+    // Automatically update visibility based on assignees
+    if (selected.length > 1 && task.visibility == TaskVisibility.all) {
+      await repo.updateTask(taskId: task.id, visibility: TaskVisibility.tagged);
+    } else if (selected.length <= 1 && task.visibility == TaskVisibility.tagged) {
+      await repo.updateTask(taskId: task.id, visibility: TaskVisibility.all);
+    }
+    
+    ref.invalidate(taskDetailProvider(task.id));
   }
 
   @override
@@ -181,7 +231,19 @@ class _TaskDetailBodyState extends ConsumerState<_TaskDetailBody> {
           ),
         if (t.assignees.isNotEmpty) ...[
           const SizedBox(height: 16),
-          Text('Assignees', style: Theme.of(context).textTheme.titleMedium),
+          Row(
+            children: [
+              Text('Assignees', style: Theme.of(context).textTheme.titleMedium),
+              const Spacer(),
+              // Only creator or admins can edit assignees.
+              if (t.createdBy == SupabaseService.currentUser?.id)
+                TextButton.icon(
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: const Text('Edit'),
+                  onPressed: () => _editAssignees(context, ref, t),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -269,6 +331,93 @@ class _TaskDetailBodyState extends ConsumerState<_TaskDetailBody> {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _AssigneePickerSheet extends StatefulWidget {
+  final List<GroupMember> members;
+  final Set<String> selected;
+  final String creatorId;
+
+  const _AssigneePickerSheet({
+    required this.members,
+    required this.selected,
+    required this.creatorId,
+  });
+
+  @override
+  State<_AssigneePickerSheet> createState() => _AssigneePickerSheetState();
+}
+
+class _AssigneePickerSheetState extends State<_AssigneePickerSheet> {
+  late Set<String> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = Set.from(widget.selected);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 16,
+        right: 16,
+        top: 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Edit Assignees',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: widget.members.map((m) {
+              final isCreator = m.userId == widget.creatorId;
+              final isSelected = _selected.contains(m.userId);
+              return FilterChip(
+                avatar: CircleAvatar(
+                  backgroundImage: m.avatarUrl != null
+                      ? NetworkImage(m.avatarUrl!)
+                      : null,
+                  backgroundColor: AppColors.subtleSurface(context),
+                ),
+                label: Text(m.displayName ?? 'Unknown'),
+                selected: isSelected,
+                onSelected: isCreator
+                    ? null
+                    : (val) {
+                        setState(() {
+                          if (val) {
+                            _selected.add(m.userId);
+                          } else {
+                            _selected.remove(m.userId);
+                          }
+                        });
+                      },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              widget.selected.clear();
+              widget.selected.addAll(_selected);
+              Navigator.of(context).pop(true);
+            },
+            child: const Text('Save'),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 }
