@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reset Password — Hudle</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ember:   #E8612C;
+      --amber:   #F59E3A;
+      --teal:    #0D9488;
+      --ink:     #1A1A2E;
+      --surface: #F9F9FB;
+      --border:  #E0E0EC;
+      --text:    #1A1A2E;
+      --muted:   #6B7280;
+      --radius:  14px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root { --surface: #0F0F1A; --border: #2A2A3E; --text: #F3F4F6; --muted: #9CA3AF; }
+      body  { background: var(--ink); }
+      .card { background: #1e1e30; }
+      input[type="password"] { background: #252535; color: var(--text); border-color: var(--border); }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--surface);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 40px 32px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 4px 24px rgba(26,26,46,.08);
+    }
+
+    .logo {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--ember), var(--amber));
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 30px;
+    }
+
+    h1 { text-align: center; font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .subtitle { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color .2s;
+      margin-bottom: 16px;
+    }
+    input[type="password"]:focus { border-color: var(--ember); }
+
+    .strength-bar { height: 4px; border-radius: 4px; background: var(--border); margin-bottom: 16px; overflow: hidden; }
+    .strength-fill { height: 100%; border-radius: 4px; transition: width .3s, background .3s; width: 0%; }
+
+    button {
+      width: 100%; padding: 14px; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      background: linear-gradient(135deg, var(--ember), var(--amber));
+      color: #fff;
+    }
+    button:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+    button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    .msg { margin-top: 16px; padding: 12px 14px; border-radius: 10px; font-size: 14px; display: none; }
+    .msg.error   { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+    .msg.success { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+      border-radius: 50%; animation: spin .7s linear infinite;
+      vertical-align: middle; margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .center-icon { font-size: 48px; text-align: center; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">🔥</div>
+
+  <!-- Password form — shown when URL hash has a valid recovery token -->
+  <div id="formView">
+    <h1>Set new password</h1>
+    <p class="subtitle">Choose a strong password for your Hudle account.</p>
+
+    <label for="pw">New password</label>
+    <input type="password" id="pw" placeholder="At least 8 characters" oninput="checkStrength()" />
+    <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+
+    <label for="pw2">Confirm password</label>
+    <input type="password" id="pw2" placeholder="Re-enter password" />
+
+    <button id="btn" onclick="submitReset()">Update password</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <!-- Success state -->
+  <div id="successView" style="display:none; text-align:center;">
+    <div class="center-icon">✅</div>
+    <h1>Password updated!</h1>
+    <p class="subtitle" style="margin-top:8px">You can now sign in with your new password in the Hudle app.</p>
+  </div>
+
+  <!-- Invalid / expired link -->
+  <div id="invalidView" style="display:none; text-align:center;">
+    <div class="center-icon">⚠️</div>
+    <h1 style="color:#B91C1C">Link expired</h1>
+    <p class="subtitle" style="margin-top:8px">This link has expired or already been used. Request a new one from the Hudle app.</p>
+  </div>
+</div>
+
+<script>
+  // Parse the URL fragment — Supabase appends tokens as a hash, e.g.:
+  //   #access_token=xxx&refresh_token=yyy&type=recovery
+  // The fragment is never sent to the server, so credentials stay client-side only.
+  const hash   = Object.fromEntries(new URLSearchParams(window.location.hash.slice(1)));
+  const AT     = hash.access_token;
+  const RT     = hash.refresh_token;
+  const isRecovery = hash.type === 'recovery';
+
+  if (!AT || !RT || !isRecovery) {
+    document.getElementById('formView').style.display  = 'none';
+    document.getElementById('invalidView').style.display = 'block';
+  }
+
+  function checkStrength() {
+    const v     = document.getElementById('pw').value;
+    const score = [v.length >= 8, /[A-Z]/.test(v), /[0-9]/.test(v), /[^A-Za-z0-9]/.test(v)].filter(Boolean).length;
+    const pct   = score * 25;
+    const fill  = document.getElementById('strengthFill');
+    fill.style.width      = pct + '%';
+    fill.style.background = pct <= 25 ? '#EF4444' : pct <= 50 ? '#F59E3A' : pct <= 75 ? '#EAB308' : '#22C55E';
+  }
+
+  function showMsg(text, type) {
+    const el = document.getElementById('msg');
+    el.textContent   = text;
+    el.className     = 'msg ' + type;
+    el.style.display = 'block';
+  }
+
+  async function submitReset() {
+    const pw  = document.getElementById('pw').value.trim();
+    const pw2 = document.getElementById('pw2').value.trim();
+    const btn = document.getElementById('btn');
+
+    if (pw.length < 8) { showMsg('Password must be at least 8 characters.', 'error'); return; }
+    if (pw !== pw2)     { showMsg('Passwords do not match.', 'error'); return; }
+
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="spinner"></span>Updating…';
+    document.getElementById('msg').style.display = 'none';
+
+    try {
+      // POST tokens + new password to the serverless API — no credentials in this page.
+      const res  = await fetch('/api/reset', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ access_token: AT, refresh_token: RT, password: pw }),
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        showMsg(json.error ?? 'Something went wrong. Please try again.', 'error');
+        btn.disabled  = false;
+        btn.innerHTML = 'Update password';
+      } else {
+        document.getElementById('formView').style.display   = 'none';
+        document.getElementById('successView').style.display = 'block';
+      }
+    } catch {
+      showMsg('Network error. Please check your connection.', 'error');
+      btn.disabled  = false;
+      btn.innerHTML = 'Update password';
+    }
+  }
+</script>
+</body>
+</html>

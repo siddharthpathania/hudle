@@ -31,8 +31,11 @@ class AuthRepository {
     await _sb.auth.signInWithPassword(email: email, password: password);
   }
 
+  // Update this URL after deploying reset-web/ to Vercel.
+  static const _resetRedirectUrl = 'REPLACE_WITH_YOUR_VERCEL_URL';
+
   Future<void> sendPasswordReset(String email) =>
-      _sb.auth.resetPasswordForEmail(email);
+      _sb.auth.resetPasswordForEmail(email, redirectTo: _resetRedirectUrl);
 
   Future<void> signOut() => _sb.auth.signOut();
 
