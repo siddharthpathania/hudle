@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/supabase_service.dart';
@@ -141,7 +142,45 @@ class TasksRepository {
                 .toList(),
           );
     }
-    return fetchTask(row['id'] as String);
+
+    final task = await fetchTask(row['id'] as String);
+
+    // Fire-and-forget: insert in-app notifications + FCM push for each
+    // assigned user that isn't the creator.
+    _notifyAssignees(
+      taskId: task.id,
+      taskTitle: task.title,
+      groupId: task.groupId,
+      assigneeIds: input.assigneeIds,
+      createdByUserId: uid,
+    ).ignore();
+
+    return task;
+  }
+
+  Future<void> _notifyAssignees({
+    required String taskId,
+    required String taskTitle,
+    required String groupId,
+    required List<String> assigneeIds,
+    required String createdByUserId,
+  }) async {
+    final others = assigneeIds.where((id) => id != createdByUserId).toList();
+    if (others.isEmpty) return;
+    try {
+      await SupabaseService.client.functions.invoke(
+        'notify-task-assigned',
+        body: {
+          'taskId': taskId,
+          'taskTitle': taskTitle,
+          'groupId': groupId,
+          'assigneeIds': assigneeIds,
+          'createdByUserId': createdByUserId,
+        },
+      );
+    } catch (e) {
+      debugPrint('notify-task-assigned: $e');
+    }
   }
 
   Future<void> updateTask({
