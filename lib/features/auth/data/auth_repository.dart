@@ -32,7 +32,7 @@ class AuthRepository {
   }
 
   // Update this URL after deploying reset-web/ to Vercel.
-  static const _resetRedirectUrl = 'REPLACE_WITH_YOUR_VERCEL_URL';
+  static const _resetRedirectUrl = 'https://hudle-delta.vercel.app/';
 
   Future<void> sendPasswordReset(String email) =>
       _sb.auth.resetPasswordForEmail(email, redirectTo: _resetRedirectUrl);
