@@ -48,7 +48,7 @@ class ProfileRepository {
     final ext =
         (dot >= 0 ? file.path.substring(dot) : '.jpg').toLowerCase();
     final path = '$uid/avatar$ext';
-    final storage = SupabaseService.client.storage.from(_avatarsBucket);
+    final storage = SupabaseService.client.storage.from('avatars');
     await storage.upload(
       path,
       file,

@@ -67,3 +67,5 @@ lib/generated_plugin_registrant.dart
 *.keystore
 *.jks
 firebase_options.dart
+
+supabase/.temp
